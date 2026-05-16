@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Receptionist — Premium Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  :root {
+    --bg-base: #050810;
+    --bg-card: rgba(10,14,30,0.85);
+    --bg-card-solid: #0a0e1e;
+    --bg-sidebar: rgba(8,12,24,0.92);
+    --bg-input: rgba(255,255,255,0.04);
+    --bg-input-focus: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.07);
+    --border-glow: rgba(79,140,255,0.35);
+    --accent: #4f8cff;
+    --accent-2: #7b5cff;
+    --accent-soft: rgba(79,140,255,0.12);
+    --accent-glow: rgba(79,140,255,0.22);
+    --text-primary: #f0f4ff;
+    --text-secondary: #8a94b8;
+    --text-muted: #4a5278;
+    --success: #22d3a0;
+    --danger: #ff5c72;
+    --user-bubble: linear-gradient(135deg,#3b6bff,#6a3dff);
+    --ai-bubble: rgba(15,20,45,0.9);
+    --shadow-card: 0 24px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06);
+    --shadow-glow: 0 0 60px rgba(79,140,255,0.15);
+    --font: 'Sora', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-xs: 7px;
+    --sidebar-w: 260px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    font-family: var(--font);
+    background: var(--bg-base);
+    color: var(--text-primary);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ========== SETUP SCREEN ========== */
+  #setup-screen {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg-base);
+    overflow-y: auto;
+    padding: 24px;
+  }
+
+  .setup-bg {
+    position: fixed; inset: 0; pointer-events: none; overflow: hidden;
+  }
+  .setup-bg-orb {
+    position: absolute; border-radius: 50%;
+    filter: blur(90px); opacity: 0.18;
+  }
+  .setup-bg-orb.orb1 {
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, #3b6bff, transparent 70%);
+    top: -150px; left: -150px;
+    animation: orbFloat 12s ease-in-out infinite;
+  }
+  .setup-bg-orb.orb2 {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, #7b5cff, transparent 70%);
+    bottom: -100px; right: -100px;
+    animation: orbFloat 15s ease-in-out infinite reverse;
+  }
+  .setup-bg-orb.orb3 {
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, #22d3a0, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    animation: orbFloat 20s ease-in-out infinite;
+    opacity: 0.07;
+  }
+
+  /* Grid overlay */
+  .setup-grid {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(79,140,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,140,255,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  @keyframes orbFloat {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(30px,-20px) scale(1.05); }
+    66% { transform: translate(-20px,30px) scale(0.97); }
+  }
+
+  .setup-wrapper {
+    position: relative; z-index: 2;
+    width: 100%; max-width: 480px;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 0;
+    animation: setupEntrance 0.8s cubic-bezier(0.16,1,0.3,1) both;
+  }
+
+  @keyframes setupEntrance {
+    from { opacity: 0; transform: translateY(28px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* Badge above card */
+  .setup-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(79,140,255,0.1);
+    border: 1px solid rgba(79,140,255,0.25);
+    border-radius: 100px;
+    padding: 6px 14px;
+    font-size: 11.5px; font-weight: 500; letter-spacing: 0.06em;
+    color: #8bb4ff; text-transform: uppercase;
+    margin-bottom: 22px;
+    backdrop-filter: blur(8px);
+  }
+  .setup-badge .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 8px var(--success);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .setup-card {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 44px 42px 40px;
+    backdrop-filter: blur(32px);
+    box-shadow: var(--shadow-card), var(--shadow-glow);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* card inner glow top */
+  .setup-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(79,140,255,0.6), transparent);
+  }
+  /* card inner glow bottom faint */
+  .setup-card::after {
+    content: '';
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 160px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    border-radius: 50%;
+    filter: blur(1px);
+  }
+
+  /* Icon */
+  .setup-icon-wrap {
+    width: 68px; height: 68px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(79,140,255,0.18), rgba(123,92,255,0.14));
+    border: 1px solid rgba(79,140,255,0.25);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 26px;
+    position: relative;
+    box-shadow: 0 0 30px rgba(79,140,255,0.18), inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+  .setup-icon-wrap i {
+    font-size: 26px;
+    background: linear-gradient(135deg, #7ab4ff, #a78bfa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  /* rotating ring */
+  .setup-icon-ring {
+    position: absolute; inset: -4px;
+    border-radius: 24px;
+    border: 1px dashed rgba(79,140,255,0.2);
+    animation: ringRotate 10s linear infinite;
+  }
+  @keyframes ringRotate {
+    to { transform: rotate(360deg); }
+  }
+
+  .setup-title {
+    text-align: center;
+    font-size: 26px; font-weight: 700; letter-spacing: -0.5px;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: 10px;
+  }
+  .setup-title span {
+    background: linear-gradient(135deg, #7ab4ff, #a78bfa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .setup-sub {
+    text-align: center;
+    font-size: 14px; color: var(--text-secondary);
+    line-height: 1.6; margin-bottom: 32px;
+    font-weight: 400;
+  }
+
+  /* Features row */
+  .setup-features {
+    display: flex; gap: 10px; margin-bottom: 30px;
+  }
+  .setup-feat {
+    flex: 1;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 12px 10px;
+    text-align: center;
+  }
+  .setup-feat i {
+    font-size: 15px; color: var(--accent); margin-bottom: 5px; display: block;
+  }
+  .setup-feat span {
+    font-size: 10.5px; color: var(--text-muted); display: block; font-weight: 500;
+  }
+
+  /* Input group */
+  .input-group { position: relative; margin-bottom: 14px; }
+
+  .input-label {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+    color: var(--text-secondary); text-transform: uppercase;
+    margin-bottom: 9px;
+  }
+  .input-label i { font-size: 11px; color: var(--accent); }
+
+  .setup-input {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 48px 14px 16px;
+    font-family: var(--mono);
+    font-size: 13px; color: var(--text-primary);
+    outline: none;
+    transition: all 0.25s ease;
+    letter-spacing: 0.03em;
+  }
+  .setup-input::placeholder { color: var(--text-muted); font-family: var(--font); font-size: 13px; }
+  .setup-input:focus {
+    border-color: var(--border-glow);
+    background: var(--bg-input-focus);
+    box-shadow: 0 0 0 3px rgba(79,140,255,0.1), 0 0 20px rgba(79,140,255,0.08);
+  }
+
+  .input-icon-btn {
+    position: absolute; right: 14px; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none; cursor: pointer;
+    color: var(--text-muted); padding: 4px;
+    transition: color 0.2s;
+    margin-top: 14px; /* account for label */
+  }
+  /* corrected position accounting for label */
+  .input-group .input-icon-btn {
+    top: calc(50% + 12px);
+  }
+  .input-icon-btn:hover { color: var(--accent); }
+
+  /* Start button */
+  .setup-btn {
+    width: 100%;
+    padding: 15px;
+    border: none; border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, #3b6bff 0%, #6a3dff 100%);
+    color: #fff; font-family: var(--font);
+    font-size: 15px; font-weight: 600;
+    cursor: pointer; position: relative;
+    overflow: hidden; letter-spacing: 0.01em;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 24px rgba(59,107,255,0.35);
+    margin-bottom: 20px;
+  }
+  .setup-btn::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .setup-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 32px rgba(59,107,255,0.45); }
+  .setup-btn:hover::before { opacity: 1; }
+  .setup-btn:active { transform: translateY(0); }
+  .setup-btn .btn-shine {
+    position: absolute; top: 0; left: -100%;
+    width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    animation: btnShine 3s ease-in-out infinite;
+  }
+  @keyframes btnShine {
+    0% { left: -100%; }
+    40%,100% { left: 150%; }
+  }
+
+  /* Trust row */
+  .trust-row {
+    display: flex; align-items: center; justify-content: center;
+    gap: 20px; flex-wrap: wrap;
+  }
+  .trust-item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11.5px; color: var(--text-muted); font-weight: 500;
+  }
+  .trust-item i { font-size: 11px; color: var(--success); }
+
+  .trust-divider {
+    width: 3px; height: 3px; border-radius: 50%;
+    background: var(--text-muted); opacity: 0.4;
+  }
+
+  /* Steps below card */
+  .setup-steps {
+    display: flex; gap: 4px; margin-top: 28px;
+    align-items: center; justify-content: center;
+  }
+  .step { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: var(--text-muted);
+    background: rgba(255,255,255,0.02);
+  }
+  .step.active .step-num {
+    border-color: rgba(79,140,255,0.4);
+    background: rgba(79,140,255,0.1);
+    color: var(--accent);
+  }
+  .step-label { font-size: 10px; color: var(--text-muted); text-align: center; }
+  .step-connector { flex: 0 0 32px; height: 1px; background: var(--border); margin-bottom: 18px; }
+
+  /* ========== MAIN APP ========== */
+  #app {
+    display: none;
+    height: 100vh; height: 100dvh;
+    flex-direction: row;
+    position: relative;
+  }
+  #app.visible { display: flex; }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    position: relative; z-index: 20;
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    backdrop-filter: blur(20px);
+  }
+
+  .sidebar-logo {
+    padding: 20px 18px 16px;
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-icon {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: linear-gradient(135deg, #3b6bff, #6a3dff);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 14px rgba(59,107,255,0.4);
+    flex-shrink: 0;
+  }
+  .logo-icon i { font-size: 15px; color: #fff; }
+  .logo-text { font-size: 14px; font-weight: 700; letter-spacing: -0.2px; }
+  .logo-text span { color: var(--accent); }
+
+  .sidebar-section { padding: 14px 12px 8px; }
+  .sidebar-section-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+    color: var(--text-muted); text-transform: uppercase; padding: 0 6px 8px;
+  }
+
+  .new-chat-btn {
+    width: 100%; padding: 10px 14px;
+    background: linear-gradient(135deg, rgba(79,140,255,0.12), rgba(123,92,255,0.08));
+    border: 1px solid rgba(79,140,255,0.2);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary); font-family: var(--font);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    display: flex; align-items: center; gap: 9px;
+    transition: all 0.2s ease; letter-spacing: 0.01em;
+    margin-bottom: 4px;
+  }
+  .new-chat-btn:hover { background: linear-gradient(135deg, rgba(79,140,255,0.2), rgba(123,92,255,0.15)); border-color: rgba(79,140,255,0.35); }
+  .new-chat-btn i { font-size: 13px; color: var(--accent); }
+
+  .demo-conv {
+    padding: 9px 12px; border-radius: var(--radius-xs);
+    cursor: pointer; transition: all 0.18s ease;
+    display: flex; align-items: center; gap: 9px;
+    font-size: 12.5px; color: var(--text-secondary);
+    margin-bottom: 2px;
+  }
+  .demo-conv:hover { background: rgba(255,255,255,0.04); color: var(--text-primary); }
+  .demo-conv i { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+  .demo-conv span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .sidebar-bottom {
+    margin-top: auto; padding: 12px;
+    border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+
+  .status-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 12px; border-radius: var(--radius-xs);
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 8px var(--success);
+    animation: pulse 2.5s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  .status-text { font-size: 12px; color: var(--text-secondary); }
+  .status-text strong { color: var(--success); font-weight: 600; }
+
+  .sidebar-btn {
+    width: 100%; padding: 9px 12px;
+    background: none; border: none;
+    border-radius: var(--radius-xs);
+    color: var(--text-secondary); font-family: var(--font);
+    font-size: 13px; cursor: pointer;
+    display: flex; align-items: center; gap: 9px;
+    transition: all 0.18s; text-align: left;
+  }
+  .sidebar-btn:hover { background: rgba(255,255,255,0.04); color: var(--text-primary); }
+  .sidebar-btn i { font-size: 13px; width: 16px; }
+
+  /* MAIN CONTENT */
+  #main-content {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column;
+    height: 100vh; height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* NAVBAR */
+  #navbar {
+    height: 60px; flex-shrink: 0;
+    background: rgba(5,8,16,0.8);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(20px);
+    display: flex; align-items: center;
+    padding: 0 20px; gap: 14px;
+    position: relative; z-index: 10;
+  }
+
+  .hamburger {
+    display: none;
+    background: none; border: none;
+    color: var(--text-secondary); font-size: 18px;
+    cursor: pointer; padding: 4px;
+  }
+
+  .nav-title {
+    font-size: 15px; font-weight: 600;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .nav-indicator {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11.5px; color: var(--success); font-weight: 500;
+  }
+  .nav-indicator::before {
+    content: '';
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 8px var(--success);
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+
+  .nav-spacer { flex: 1; }
+
+  .demo-badge {
+    padding: 4px 12px; border-radius: 100px;
+    background: rgba(79,140,255,0.1);
+    border: 1px solid rgba(79,140,255,0.25);
+    font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+    color: #8bb4ff; text-transform: uppercase;
+  }
+
+  .nav-settings-btn {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 14px;
+    transition: all 0.2s;
+  }
+  .nav-settings-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
+
+  /* CHAT AREA */
+  #chat-area {
+    flex: 1; min-height: 0;
+    overflow-y: auto; overflow-x: hidden;
+    padding: 28px 24px;
+    display: flex; flex-direction: column;
+    gap: 20px;
+    scroll-behavior: smooth;
+  }
+  #chat-area::-webkit-scrollbar { width: 4px; }
+  #chat-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 4px; }
+
+  /* Empty state */
+  #empty-state {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 20px;
+    animation: fadeInUp 0.5s ease both;
+  }
+  .empty-icon {
+    width: 72px; height: 72px; border-radius: 22px;
+    background: linear-gradient(135deg, rgba(79,140,255,0.15), rgba(123,92,255,0.1));
+    border: 1px solid rgba(79,140,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+    box-shadow: 0 0 40px rgba(79,140,255,0.12);
+  }
+  .empty-icon i { font-size: 30px; background: linear-gradient(135deg, #7ab4ff, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .empty-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.3px; }
+  .empty-sub { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; max-width: 340px; margin-bottom: 28px; }
+
+  .suggestions-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 10px; width: 100%; max-width: 520px;
+  }
+  .suggestion-card {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px;
+    cursor: pointer; text-align: left;
+    transition: all 0.2s ease; font-family: var(--font);
+  }
+  .suggestion-card:hover {
+    background: rgba(79,140,255,0.08);
+    border-color: rgba(79,140,255,0.25);
+    transform: translateY(-1px);
+  }
+  .suggestion-card .s-icon { font-size: 16px; margin-bottom: 6px; display: block; }
+  .suggestion-card .s-text { font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; }
+  .suggestion-card:hover .s-text { color: var(--text-primary); }
+
+  /* Messages */
+  .msg-row {
+    display: flex; gap: 12px; align-items: flex-end;
+    animation: msgIn 0.35s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  .msg-row.user { flex-direction: row-reverse; }
+
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .avatar {
+    width: 32px; height: 32px; border-radius: 9px;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .avatar.ai {
+    background: linear-gradient(135deg, #3b6bff, #6a3dff);
+    box-shadow: 0 0 12px rgba(59,107,255,0.35);
+    color: #fff;
+  }
+  .avatar.user {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--border); color: var(--text-secondary);
+  }
+
+  .bubble-wrap { display: flex; flex-direction: column; gap: 4px; max-width: 72%; }
+  .msg-row.user .bubble-wrap { align-items: flex-end; }
+
+  .bubble {
+    padding: 12px 16px; border-radius: 16px;
+    font-size: 13.5px; line-height: 1.65;
+    word-break: break-word; position: relative;
+  }
+  .bubble.ai {
+    background: var(--ai-bubble);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+    color: var(--text-primary);
+  }
+  .bubble.user {
+    background: var(--user-bubble);
+    border-bottom-right-radius: 4px;
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(59,107,255,0.3);
+  }
+
+  .bubble strong { font-weight: 600; }
+  .bubble em { font-style: italic; color: var(--text-secondary); }
+  .bubble code {
+    font-family: var(--mono); font-size: 12px;
+    background: rgba(255,255,255,0.08); padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .bubble pre {
+    background: rgba(0,0,0,0.35); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px; margin: 8px 0;
+    overflow-x: auto;
+  }
+  .bubble pre code { background: none; padding: 0; font-size: 12px; }
+
+  .msg-meta {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 2px;
+  }
+  .msg-time { font-size: 10.5px; color: var(--text-muted); }
+  .copy-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-muted); font-size: 11px;
+    padding: 2px 4px; border-radius: 4px;
+    transition: all 0.15s; opacity: 0;
+  }
+  .msg-row:hover .copy-btn { opacity: 1; }
+  .copy-btn:hover { color: var(--accent); background: rgba(79,140,255,0.1); }
+
+  /* Typing indicator */
+  .typing-row {
+    display: flex; gap: 12px; align-items: flex-end;
+    animation: msgIn 0.3s ease both;
+  }
+  .typing-bubble {
+    padding: 14px 18px;
+    background: var(--ai-bubble);
+    border: 1px solid var(--border);
+    border-radius: 16px; border-bottom-left-radius: 4px;
+    display: flex; gap: 5px; align-items: center;
+  }
+  .typing-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); opacity: 0.5;
+  }
+  .typing-dot:nth-child(1) { animation: typingBounce 1.2s ease-in-out infinite; }
+  .typing-dot:nth-child(2) { animation: typingBounce 1.2s ease-in-out 0.2s infinite; }
+  .typing-dot:nth-child(3) { animation: typingBounce 1.2s ease-in-out 0.4s infinite; }
+  @keyframes typingBounce {
+    0%,80%,100% { transform: translateY(0); opacity: 0.5; }
+    40%          { transform: translateY(-5px); opacity: 1; }
+  }
+
+  /* INPUT BAR */
+  #input-bar {
+    padding: 16px 20px 20px;
+    background: rgba(5,8,16,0.85);
+    border-top: 1px solid var(--border);
+    backdrop-filter: blur(20px);
+    flex-shrink: 0;
+  }
+
+  .input-wrap {
+    display: flex; gap: 10px; align-items: flex-end;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 14px; padding: 10px 10px 10px 16px;
+    transition: all 0.25s;
+  }
+  .input-wrap:focus-within {
+    border-color: var(--border-glow);
+    box-shadow: 0 0 0 3px rgba(79,140,255,0.08);
+  }
+
+  #msg-input {
+    flex: 1; background: none; border: none; outline: none;
+    color: var(--text-primary); font-family: var(--font);
+    font-size: 14px; resize: none; max-height: 140px;
+    line-height: 1.5; padding: 4px 0;
+    scrollbar-width: none;
+  }
+  #msg-input::placeholder { color: var(--text-muted); }
+  #msg-input::-webkit-scrollbar { display: none; }
+
+  #send-btn {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: linear-gradient(135deg, #3b6bff, #6a3dff);
+    border: none; cursor: pointer;
+    color: #fff; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; flex-shrink: 0;
+    box-shadow: 0 2px 12px rgba(59,107,255,0.35);
+  }
+  #send-btn:hover { transform: scale(1.05); box-shadow: 0 4px 20px rgba(59,107,255,0.45); }
+  #send-btn:active { transform: scale(0.97); }
+  #send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .input-hint {
+    font-size: 11px; color: var(--text-muted);
+    margin-top: 8px; padding: 0 4px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  /* SETTINGS MODAL */
+  #settings-overlay {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  #settings-overlay.open { display: flex; }
+
+  .settings-modal {
+    background: #0c1020;
+    border: 1px solid var(--border);
+    border-radius: 20px; width: 100%; max-width: 420px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+    overflow: hidden;
+    animation: modalIn 0.3s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.94) translateY(12px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-header {
+    padding: 20px 22px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-size: 15px; font-weight: 700; }
+  .modal-close {
+    width: 28px; height: 28px; border-radius: 7px;
+    background: rgba(255,255,255,0.05); border: none;
+    color: var(--text-secondary); cursor: pointer; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .modal-close:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+
+  .modal-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; }
+
+  .settings-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; border-radius: 10px;
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .settings-item:hover { background: rgba(255,255,255,0.06); }
+  .settings-item .si-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .settings-item .si-text strong { display: block; font-size: 13px; margin-bottom: 2px; }
+  .settings-item .si-text span { font-size: 11.5px; color: var(--text-muted); }
+  .settings-item .si-arrow { margin-left: auto; color: var(--text-muted); font-size: 12px; }
+
+  .si-blue .si-icon { background: rgba(79,140,255,0.12); color: var(--accent); }
+  .si-red .si-icon { background: rgba(255,92,114,0.1); color: var(--danger); }
+  .si-red .si-text strong { color: var(--danger); }
+  .si-green .si-icon { background: rgba(34,211,160,0.1); color: var(--success); }
+
+  .modal-about {
+    margin: 4px 0; padding: 14px;
+    background: rgba(79,140,255,0.06); border: 1px solid rgba(79,140,255,0.15);
+    border-radius: 10px; font-size: 12px; color: var(--text-secondary); line-height: 1.6;
+  }
+  .modal-about strong { color: var(--accent); }
+
+  /* SIDEBAR OVERLAY on mobile */
+  #sidebar-overlay {
+    display: none; position: fixed; inset: 0; z-index: 15;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 4px; }
+
+  /* ========== RESPONSIVE ========== */
+  @media (max-width: 768px) {
+    :root { --sidebar-w: 260px; }
+
+    #sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0;
+      transform: translateX(-100%);
+      z-index: 30;
+    }
+    #sidebar.open { transform: translateX(0); }
+    #sidebar-overlay.open { display: block; }
+
+    .hamburger { display: block; }
+
+    .setup-card { padding: 30px 22px 26px; }
+    .setup-features { gap: 7px; }
+    .setup-feat { padding: 10px 8px; }
+    .suggestions-grid { grid-template-columns: 1fr 1fr; }
+
+    #chat-area { padding: 16px 14px; }
+    .bubble-wrap { max-width: 86%; }
+    #input-bar { padding: 12px 14px 16px; }
+    .demo-badge { display: none; }
+  }
+
+  @media (max-width: 400px) {
+    .suggestions-grid { grid-template-columns: 1fr; }
+    .setup-features { flex-direction: column; }
+    .trust-divider { display: none; }
+    .setup-card { padding: 26px 18px 22px; }
+    .setup-title { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== SETUP SCREEN ==================== -->
+<div id="setup-screen">
+  <div class="setup-bg">
+    <div class="setup-bg-orb orb1"></div>
+    <div class="setup-bg-orb orb2"></div>
+    <div class="setup-bg-orb orb3"></div>
+  </div>
+  <div class="setup-grid"></div>
+
+  <div class="setup-wrapper">
+    <div class="setup-badge">
+      <span class="dot"></span>
+      AI Receptionist &mdash; Powered by Gemini 2.0
+    </div>
+
+    <div class="setup-card">
+      <!-- Top glow line via ::before -->
+
+      <div class="setup-icon-wrap">
+        <div class="setup-icon-ring"></div>
+        <i class="fa-solid fa-robot"></i>
+      </div>
+
+      <h1 class="setup-title">
+        <span>AI Receptionist</span><br>Demo
+      </h1>
+      <p class="setup-sub">
+        A premium AI assistant for professional service businesses. Enter your Gemini API key to activate the live demo.
+      </p>
+
+      <!-- Feature pills -->
+      <div class="setup-features">
+        <div class="setup-feat">
+          <i class="fa-solid fa-bolt"></i>
+          <span>Instant AI</span>
+        </div>
+        <div class="setup-feat">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Secure Local</span>
+        </div>
+        <div class="setup-feat">
+          <i class="fa-solid fa-globe"></i>
+          <span>Bilingual</span>
+        </div>
+      </div>
+
+      <!-- API key input -->
+      <div class="input-group">
+        <div class="input-label">
+          <i class="fa-solid fa-key"></i>
+          Gemini API Key
+        </div>
+        <input
+          type="password"
+          id="api-key-input"
+          class="setup-input"
+          placeholder="AIza···············"
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <button class="input-icon-btn" onclick="toggleApiVis()" id="vis-toggle" title="Toggle visibility">
+          <i class="fa-solid fa-eye" id="vis-icon"></i>
+        </button>
+      </div>
+
+      <button class="setup-btn" onclick="startDemo()">
+        <div class="btn-shine"></div>
+        <i class="fa-solid fa-play" style="margin-right:8px;font-size:13px;"></i>
+        Start Demo
+      </button>
+
+      <div class="trust-row">
+        <div class="trust-item">
+          <i class="fa-solid fa-lock"></i>
+          Stored locally only
+        </div>
+        <div class="trust-divider"></div>
+        <div class="trust-item">
+          <i class="fa-solid fa-shield-check"></i>
+          Never sent to our servers
+        </div>
+        <div class="trust-divider"></div>
+        <div class="trust-item">
+          <i class="fa-solid fa-eye-slash"></i>
+          Fully private
+        </div>
+      </div>
+    </div>
+
+    <!-- Steps -->
+    <div class="setup-steps">
+      <div class="step active">
+        <div class="step-num">1</div>
+        <div class="step-label">Add Key</div>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-label">Activate</div>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-label">Chat Live</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MAIN APP ==================== -->
+<div id="app">
+
+  <!-- Sidebar overlay (mobile) -->
+  <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon"><i class="fa-solid fa-robot"></i></div>
+      <div class="logo-text">AI <span>Receptionist</span></div>
+    </div>
+
+    <div class="sidebar-section">
+      <button class="new-chat-btn" onclick="newChat()">
+        <i class="fa-solid fa-plus"></i> New Chat
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Demos</div>
+      <div class="demo-conv" onclick="loadDemo('What services do you provide?')">
+        <i class="fa-regular fa-comment-dots"></i>
+        <span>Services Overview</span>
+      </div>
+      <div class="demo-conv" onclick="loadDemo('How can AI help my business?')">
+        <i class="fa-regular fa-comment-dots"></i>
+        <span>AI for Business</span>
+      </div>
+      <div class="demo-conv" onclick="loadDemo('I want to book a consultation')">
+        <i class="fa-regular fa-comment-dots"></i>
+        <span>Book Consultation</span>
+      </div>
+      <div class="demo-conv" onclick="loadDemo('Explain GST registration process')">
+        <i class="fa-regular fa-comment-dots"></i>
+        <span>GST Registration</span>
+      </div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="status-row">
+        <div class="status-dot"></div>
+        <div class="status-text"><strong>Gemini 2.0</strong> &nbsp;Connected</div>
+      </div>
+      <button class="sidebar-btn" onclick="openSettings()">
+        <i class="fa-solid fa-gear"></i> Settings
+      </button>
+      <button class="sidebar-btn" onclick="clearChat()">
+        <i class="fa-regular fa-trash-can"></i> Clear Chat
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div id="main-content">
+
+    <!-- NAVBAR -->
+    <div id="navbar">
+      <button class="hamburger" onclick="toggleSidebar()">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="nav-title">
+        <span>AI Receptionist</span>
+        <div class="nav-indicator">Online</div>
+      </div>
+      <div class="nav-spacer"></div>
+      <div class="demo-badge">Demo Mode</div>
+      <div class="nav-settings-btn" onclick="openSettings()" title="Settings">
+        <i class="fa-solid fa-ellipsis-vertical"></i>
+      </div>
+    </div>
+
+    <!-- CHAT AREA -->
+    <div id="chat-area">
+      <div id="empty-state">
+        <div class="empty-icon"><i class="fa-solid fa-robot"></i></div>
+        <div class="empty-title">How can I help you today?</div>
+        <div class="empty-sub">I'm your AI receptionist — ask me anything about services, appointments, or how AI can transform your business.</div>
+        <div class="suggestions-grid">
+          <div class="suggestion-card" onclick="sendSuggestion('How can AI help businesses?')">
+            <span class="s-icon">🤖</span>
+            <div class="s-text">How can AI help businesses?</div>
+          </div>
+          <div class="suggestion-card" onclick="sendSuggestion('Book a consultation')">
+            <span class="s-icon">📅</span>
+            <div class="s-text">Book a consultation</div>
+          </div>
+          <div class="suggestion-card" onclick="sendSuggestion('Explain GST registration')">
+            <span class="s-icon">📋</span>
+            <div class="s-text">Explain GST registration</div>
+          </div>
+          <div class="suggestion-card" onclick="sendSuggestion('What services do you provide?')">
+            <span class="s-icon">💼</span>
+            <div class="s-text">What services do you provide?</div>
+          </div>
+          <div class="suggestion-card" onclick="sendSuggestion('How does this AI receptionist work?')">
+            <span class="s-icon">⚡</span>
+            <div class="s-text">How does this AI receptionist work?</div>
+          </div>
+          <div class="suggestion-card" onclick="sendSuggestion('What are your business hours and pricing?')">
+            <span class="s-icon">🕐</span>
+            <div class="s-text">Business hours & pricing</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INPUT BAR -->
+    <div id="input-bar">
+      <div class="input-wrap">
+        <textarea
+          id="msg-input"
+          rows="1"
+          placeholder="Type your message…"
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"
+        ></textarea>
+        <button id="send-btn" onclick="sendMessage()">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </div>
+      <div class="input-hint">
+        <span>Press <kbd style="font-family:var(--mono);font-size:10px;background:rgba(255,255,255,0.07);padding:1px 5px;border-radius:3px;color:var(--text-secondary)">Shift+Enter</kbd> for new line</span>
+        <span style="color:var(--text-muted);">Gemini 2.0 Flash</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SETTINGS MODAL ==================== -->
+<div id="settings-overlay" onclick="closeSettingsOnOverlay(event)">
+  <div class="settings-modal">
+    <div class="modal-header">
+      <div class="modal-title">Settings</div>
+      <button class="modal-close" onclick="closeSettings()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="settings-item si-blue" onclick="changeApiKey()">
+        <div class="si-icon"><i class="fa-solid fa-key"></i></div>
+        <div class="si-text">
+          <strong>Change API Key</strong>
+          <span>Update your Gemini API key</span>
+        </div>
+        <div class="si-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+      </div>
+      <div class="settings-item si-green" onclick="newChat(); closeSettings();">
+        <div class="si-icon"><i class="fa-solid fa-rotate"></i></div>
+        <div class="si-text">
+          <strong>Reset Chat</strong>
+          <span>Start a fresh conversation</span>
+        </div>
+        <div class="si-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+      </div>
+      <div class="settings-item si-red" onclick="removeApiKey()">
+        <div class="si-icon"><i class="fa-solid fa-trash"></i></div>
+        <div class="si-text">
+          <strong>Remove API Key</strong>
+          <span>Delete from local storage</span>
+        </div>
+        <div class="si-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+      </div>
+      <div class="modal-about">
+        <strong>About this Demo</strong><br>
+        This is a premium AI Receptionist demo powered by Google Gemini 2.0 Flash. Your API key is stored only in your browser's localStorage and is never transmitted to any third-party server.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- State ----
+let apiKey = '';
+let messages = []; // conversation history
+let isTyping = false;
+const SYSTEM_PROMPT = "You are a professional AI receptionist assistant for modern businesses. Speak professionally, clearly and helpfully. You assist with queries about services, appointments, business information, and general questions. Be concise yet thorough. You can communicate in both English and Hindi based on what language the user uses.";
+
+// ---- Init ----
+window.addEventListener('DOMContentLoaded', () => {
+  apiKey = localStorage.getItem('gemini_api_key') || '';
+  if (apiKey) {
+    showApp();
+  }
+});
+
+// ---- Setup Screen ----
+function toggleApiVis() {
+  const inp = document.getElementById('api-key-input');
+  const icon = document.getElementById('vis-icon');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    icon.className = 'fa-solid fa-eye-slash';
+  } else {
+    inp.type = 'password';
+    icon.className = 'fa-solid fa-eye';
+  }
+}
+
+function startDemo() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key) {
+    shakeInput();
+    return;
+  }
+  apiKey = key;
+  localStorage.setItem('gemini_api_key', key);
+  showApp();
+}
+
+function shakeInput() {
+  const inp = document.getElementById('api-key-input');
+  inp.style.borderColor = 'var(--danger)';
+  inp.style.boxShadow = '0 0 0 3px rgba(255,92,114,0.15)';
+  inp.placeholder = 'Please enter your Gemini API key';
+  setTimeout(() => {
+    inp.style.borderColor = '';
+    inp.style.boxShadow = '';
+    inp.placeholder = 'AIza···············';
+  }, 2200);
+}
+
+function showApp() {
+  document.getElementById('setup-screen').style.display = 'none';
+  const app = document.getElementById('app');
+  app.classList.add('visible');
+  app.style.animation = 'fadeInUp 0.5s ease both';
+  document.getElementById('msg-input').focus();
+}
+
+// ---- Sidebar ----
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
+// ---- Settings Modal ----
+function openSettings() { document.getElementById('settings-overlay').classList.add('open'); }
+function closeSettings() { document.getElementById('settings-overlay').classList.remove('open'); }
+function closeSettingsOnOverlay(e) { if (e.target === document.getElementById('settings-overlay')) closeSettings(); }
+
+function changeApiKey() {
+  closeSettings();
+  const newKey = prompt('Enter new Gemini API Key:');
+  if (newKey && newKey.trim()) {
+    apiKey = newKey.trim();
+    localStorage.setItem('gemini_api_key', apiKey);
+    showToast('API key updated ✓');
+  }
+}
+
+function removeApiKey() {
+  if (confirm('Remove API key and return to setup?')) {
+    localStorage.removeItem('gemini_api_key');
+    apiKey = '';
+    location.reload();
+  }
+}
+
+// ---- Chat ----
+function newChat() {
+  messages = [];
+  const area = document.getElementById('chat-area');
+  area.innerHTML = getEmptyState();
+  closeSidebar();
+}
+
+function clearChat() { newChat(); }
+
+function getEmptyState() {
+  return `<div id="empty-state">
+    <div class="empty-icon"><i class="fa-solid fa-robot"></i></div>
+    <div class="empty-title">How can I help you today?</div>
+    <div class="empty-sub">I'm your AI receptionist — ask me anything about services, appointments, or how AI can transform your business.</div>
+    <div class="suggestions-grid">
+      <div class="suggestion-card" onclick="sendSuggestion('How can AI help businesses?')"><span class="s-icon">🤖</span><div class="s-text">How can AI help businesses?</div></div>
+      <div class="suggestion-card" onclick="sendSuggestion('Book a consultation')"><span class="s-icon">📅</span><div class="s-text">Book a consultation</div></div>
+      <div class="suggestion-card" onclick="sendSuggestion('Explain GST registration')"><span class="s-icon">📋</span><div class="s-text">Explain GST registration</div></div>
+      <div class="suggestion-card" onclick="sendSuggestion('What services do you provide?')"><span class="s-icon">💼</span><div class="s-text">What services do you provide?</div></div>
+      <div class="suggestion-card" onclick="sendSuggestion('How does this AI receptionist work?')"><span class="s-icon">⚡</span><div class="s-text">How does this AI receptionist work?</div></div>
+      <div class="suggestion-card" onclick="sendSuggestion('What are your business hours and pricing?')"><span class="s-icon">🕐</span><div class="s-text">Business hours & pricing</div></div>
+    </div>
+  </div>`;
+}
+
+function sendSuggestion(text) {
+  document.getElementById('msg-input').value = text;
+  sendMessage();
+}
+
+function loadDemo(text) {
+  newChat();
+  setTimeout(() => {
+    document.getElementById('msg-input').value = text;
+    sendMessage();
+  }, 100);
+  closeSidebar();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+
+function getTime() {
+  return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
+function renderMarkdown(text) {
+  // Very basic markdown
+  return text
+    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+}
+
+function appendUserMsg(text) {
+  const empty = document.getElementById('empty-state');
+  if (empty) empty.remove();
+
+  const area = document.getElementById('chat-area');
+  const time = getTime();
+  const id = 'msg-' + Date.now();
+
+  const div = document.createElement('div');
+  div.className = 'msg-row user';
+  div.innerHTML = `
+    <div class="avatar user"><i class="fa-solid fa-user"></i></div>
+    <div class="bubble-wrap">
+      <div class="bubble user">${escapeHtml(text)}</div>
+      <div class="msg-meta">
+        <button class="copy-btn" onclick="copyMsg(this, '${escapeAttr(text)}')" title="Copy"><i class="fa-regular fa-copy"></i></button>
+        <span class="msg-time">${time}</span>
+      </div>
+    </div>`;
+  area.appendChild(div);
+  scrollBottom();
+}
+
+function showTyping() {
+  const area = document.getElementById('chat-area');
+  const div = document.createElement('div');
+  div.className = 'typing-row'; div.id = 'typing-indicator';
+  div.innerHTML = `
+    <div class="avatar ai"><i class="fa-solid fa-robot"></i></div>
+    <div class="typing-bubble">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>`;
+  area.appendChild(div);
+  scrollBottom();
+}
+
+function hideTyping() {
+  const t = document.getElementById('typing-indicator');
+  if (t) t.remove();
+}
+
+function appendAiMsg(text) {
+  const area = document.getElementById('chat-area');
+  const time = getTime();
+  const div = document.createElement('div');
+  div.className = 'msg-row';
+  div.innerHTML = `
+    <div class="avatar ai"><i class="fa-solid fa-robot"></i></div>
+    <div class="bubble-wrap">
+      <div class="bubble ai">${renderMarkdown(text)}</div>
+      <div class="msg-meta">
+        <span class="msg-time">${time}</span>
+        <button class="copy-btn" onclick="copyMsg(this, '${escapeAttr(text)}')" title="Copy"><i class="fa-regular fa-copy"></i></button>
+      </div>
+    </div>`;
+  area.appendChild(div);
+  scrollBottom();
+}
+
+function scrollBottom() {
+  const area = document.getElementById('chat-area');
+  area.scrollTop = area.scrollHeight;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escapeAttr(s) {
+  return s.replace(/'/g,"&#39;").replace(/"/g,"&quot;").replace(/\n/g,' ');
+}
+
+function copyMsg(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+    btn.style.color = 'var(--success)';
+    setTimeout(() => {
+      btn.innerHTML = '<i class="fa-regular fa-copy"></i>';
+      btn.style.color = '';
+    }, 1600);
+  });
+}
+
+async function sendMessage() {
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text || isTyping) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  isTyping = true;
+  document.getElementById('send-btn').disabled = true;
+
+  // Add to history
+  messages.push({ role: 'user', parts: [{ text }] });
+
+  appendUserMsg(text);
+  showTyping();
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents: messages
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      const errMsg = data?.error?.message || 'API error. Please check your API key.';
+      hideTyping();
+      appendAiMsg('⚠️ ' + errMsg);
+      messages.pop(); // remove failed user message
+    } else {
+      const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'I apologize, I could not generate a response. Please try again.';
+      messages.push({ role: 'model', parts: [{ text: aiText }] });
+      hideTyping();
+      appendAiMsg(aiText);
+    }
+  } catch (err) {
+    hideTyping();
+    appendAiMsg('⚠️ Network error. Please check your internet connection and try again.');
+    messages.pop();
+  }
+
+  isTyping = false;
+  document.getElementById('send-btn').disabled = false;
+  document.getElementById('msg-input').focus();
+}
+
+// ---- Toast ----
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  Object.assign(t.style, {
+    position: 'fixed', bottom: '28px', left: '50%',
+    transform: 'translateX(-50%) translateY(10px)',
+    background: 'rgba(10,14,30,0.95)', border: '1px solid rgba(79,140,255,0.3)',
+    color: '#fff', padding: '10px 20px', borderRadius: '100px',
+    fontSize: '13px', fontFamily: 'var(--font)', zIndex: '999',
+    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+    transition: 'all 0.3s ease', opacity: '0'
+  });
+  document.body.appendChild(t);
+  requestAnimationFrame(() => {
+    t.style.opacity = '1'; t.style.transform = 'translateX(-50%) translateY(0)';
+  });
+  setTimeout(() => {
+    t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(10px)';
+    setTimeout(() => t.remove(), 300);
+  }, 2500);
+}
+
+// Enter to start demo
+document.getElementById('api-key-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startDemo();
+});
+</script>
+</body>
+</html>
